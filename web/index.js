@@ -71,3 +71,60 @@ app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res, _next) => {
 });
 
 app.listen(PORT);
+
+const CREATE_DEFERRED_PURCHASE_MUTATION = `
+mutation sellingPlanGroupCreate($input: SellingPlanGroupInput!) {
+  sellingPlanGroupCreate(input: $input) {
+    sellingPlanGroup {
+      id
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}`;
+app.post("/api/deferred-purchase/create", async (req, res) => {
+  const client = new shopify.api.clients.Graphql({
+    session: res.locals.shopify.session,
+  });
+
+  const data = await client.query({
+    data: {
+      query: CREATE_DEFERRED_PURCHASE_MUTATION,
+      variables: req.body,
+    },
+  });
+
+  res.send(data.body);
+});
+const GET_DEFERRED_PURCHASES_QUERY = `
+query SellingPlanGroupsList {
+  sellingPlanGroups(first: 10) {
+    edges {
+      cursor
+      node {
+        id
+        name
+        createdAt
+        productCount
+        summary
+      }
+    }
+  }
+}
+`;
+app.get("/api/deferred-purchase", async (req, res) => {
+  const client = new shopify.api.clients.Graphql({
+    session: res.locals.shopify.session,
+});
+
+const data = await client.query({
+  data: {
+    query: GET_DEFERRED_PURCHASES_QUERY,
+  }
+});
+res.send(data.body);
+});
+
+
